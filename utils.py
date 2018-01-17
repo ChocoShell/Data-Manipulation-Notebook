@@ -1,6 +1,7 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn import neighbors
+from sklearn.linear_model import LinearRegression
 import numpy as np
 
 def get_data(symbols, dates, normal=False):
@@ -54,3 +55,45 @@ def stock_nearest_neighbors(data, n=3):
         plt.title("KNeighborsRegressor (k = %i, weights = '%s')" % (n,
                                                                 weights))
     plt.show()
+
+class KNNLearner:
+    def __init__(self, k):
+        self.k = k
+        
+    def train(self, data):
+        knn = neighbors.KNeighborsRegressor(self.k, weights='uniform')
+        x = np.array(data.index.values)
+        x = np.reshape(x, (-1,1))
+        y = np.array(data.values)
+        y = np.reshape(y, (-1,1))
+        self.algo = knn.fit(x, y)
+
+    def query(self, x):
+        return self.algo.predict(x)
+
+class LinRegLearner:
+    def __init__(self):
+        pass
+        
+    def train(self, data):
+        linreg = LinearRegression()
+        x = np.array(data.index.values)
+        x = np.reshape(x, (-1,1))
+        y = np.array(data.values)
+        y = np.reshape(y, (-1,1))
+        
+        def interpolate_delta(df, inplace=False):
+            if not inplace:
+                df = df.copy()
+            ind = df.index
+            df.index = df.index.total_seconds()
+            df.interpolate(method="index", inplace=True)
+            df.index = ind
+            return df
+        #x = interpolate_delta(data).index
+        print x
+        self.algo = linreg.fit(x, y) # from scipy or numpy
+    
+    def query(self, x):
+        return self.algo.predict(x[:, np.newaxis])
+        

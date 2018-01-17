@@ -1,7 +1,7 @@
 # TODO plot portfolio
 
 import pandas as pd
-from utils import get_data, plot_data, stock_nearest_neighbors
+from utils import get_data, plot_data, stock_nearest_neighbors, KNNLearner, LinRegLearner
 import scipy.optimize
 
 import numpy as np
@@ -111,12 +111,39 @@ def main():
     dfport =  pd.DataFrame(dfport.sum(axis=1), columns=['Portfolio'])
     df = df.join(dfport)
     # plot_data(normalize(df))
-    stock_nearest_neighbors(dfport)
+    x = np.array(dfport.index.values)
+    x_ = np.reshape(x, (-1,1))
+    y = np.array(dfport.values)
+    y = np.reshape(y, (-1,1))
+
+    knn = KNNLearner(3)
+    knn.train(dfport)
+    y_ = knn.query(x_)
+
+    def interpolate_delta(df, inplace=False):
+        if not inplace:
+            df = df.copy()
+        ind = df.index
+        df.index = df.index.total_seconds()
+        df.interpolate(method="index", inplace=True)
+        df.index = ind
+        return df
+
+    linreg = LinRegLearner()
+    linreg.train(dfport)
+    print type(x[0])
+    print type(np.timedelta64(1, 's'))
+
+    helper = np.vectorize(lambda x: x.total_seconds)
+    #x = interpolate_delta(x)
+    y_lin = linreg.query(helper(x))
+
+
     
 
     import matplotlib.pyplot as plt
-    plt.plot(indices[:,2])
-    dfport.plot()
+    plt.plot(x, y_,'b-', c='g', label='KNN')
+    plt.plot(x, y_lin,'b-', c='g', label='LinReg')
 
     plt.show()
 
